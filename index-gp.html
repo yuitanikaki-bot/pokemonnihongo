@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ポケ英語">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="manifest" href="./manifest-gp.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>ポケモン えいご | Pokémon English</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #FFD700;
+    --red: #E3350D;
+    --dark: #1a1a2e;
+    --card: rgba(255,255,255,0.07);
+    --border: rgba(255,215,0,0.2);
+    --text: rgba(255,255,255,0.9);
+    --muted: rgba(255,255,255,0.4);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body { height: 100%; overscroll-behavior: none; }
+
+  body {
+    background: linear-gradient(160deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%);
+    background-attachment: fixed;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    color: var(--text);
+    overflow-x: hidden;
+    min-height: 100dvh;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  .app-shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 100dvh;
+  }
+
+  @media (min-width: 768px) {
+    .app-shell {
+      grid-template-columns: 380px 1fr;
+      grid-template-rows: 100dvh;
+    }
+    .left-panel { overflow-y: auto; border-right: 1px solid var(--border); background: rgba(0,0,0,0.15); backdrop-filter: blur(20px); }
+    .right-panel { overflow-y: auto; padding: 40px; }
+  }
+
+  /* LEFT PANEL */
+  .left-panel { padding: 0 0 20px; }
+
+  .app-header {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    position: sticky; top: 0;
+    background: rgba(26,26,46,0.92);
+    backdrop-filter: blur(20px);
+    z-index: 10;
+  }
+
+  .header-label { font-size: 10px; letter-spacing: 5px; color: var(--gold); opacity: 0.8; text-transform: uppercase; margin-bottom: 4px; }
+
+  .app-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 26px; color: white;
+    text-shadow: 0 0 24px rgba(255,215,0,0.4);
+    line-height: 1; margin-bottom: 4px;
+  }
+
+  .app-desc { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+
+  /* Search */
+  .search-wrap { position: relative; }
+
+  .search-input {
+    width: 100%; padding: 14px 18px;
+    border-radius: 16px; border: 2px solid var(--border);
+    background: rgba(255,255,255,0.07); color: white;
+    font-size: 20px; font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-weight: 700; outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+    letter-spacing: 2px;
+  }
+
+  .search-input:focus { border-color: rgba(255,215,0,0.5); box-shadow: 0 0 0 3px rgba(255,215,0,0.1); }
+  .search-input::placeholder { color: rgba(255,255,255,0.25); font-size: 15px; letter-spacing: 0; }
+
+  .suggestions {
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+    background: #1b2545; border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden; z-index: 100;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6); display: none;
+  }
+
+  .sugg-item {
+    padding: 14px 18px; display: flex; justify-content: space-between;
+    align-items: center; cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }
+  .sugg-item:hover { background: rgba(255,215,0,0.1); }
+  .sugg-item:last-child { border-bottom: none; }
+  .sugg-jp-big { font-size: 22px; font-weight: 900; color: white; }
+  .sugg-en { font-size: 13px; color: var(--muted); text-transform: capitalize; }
+
+  /* Popular list */
+  .section-label { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); padding: 20px 24px 10px; }
+
+  .popular-list { padding: 0 16px; }
+
+  .popular-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 12px; border-radius: 14px; cursor: pointer;
+    transition: background 0.15s; margin-bottom: 4px;
+  }
+  .popular-item:hover, .popular-item.active { background: rgba(255,215,0,0.1); }
+  .popular-item.active { border: 1px solid rgba(255,215,0,0.3); }
+
+  .pop-img-wrap {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden; position: relative;
+  }
+  .pop-img { width: 46px; height: 46px; object-fit: contain; transition: opacity 0.3s; }
+  .pop-img-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; opacity: 0.3; }
+
+  .pop-names { flex: 1; min-width: 0; }
+  .pop-jp { font-size: 22px; font-weight: 900; color: white; line-height: 1.1; }
+  .pop-hira { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+  .pop-en { font-size: 12px; color: var(--gold); margin-top: 2px; text-transform: capitalize; }
+  .pop-arrow { color: var(--muted); font-size: 14px; flex-shrink: 0; }
+
+  /* RIGHT PANEL */
+  .right-panel { padding: 24px 20px 40px; }
+  @media (max-width: 767px) { .right-panel { padding: 20px 16px 40px; } }
+
+  /* Empty state */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 60dvh;
+    text-align: center; color: var(--muted); gap: 12px;
+  }
+  .empty-pokeball {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: conic-gradient(#E3350D 0% 50%, white 50% 100%);
+    position: relative; box-shadow: 0 0 40px rgba(227,53,13,0.2);
+    animation: spin-slow 8s linear infinite;
+  }
+  .empty-pokeball::after { content: ''; position: absolute; inset: 10px; border-radius: 50%; background: conic-gradient(#cc2d0b 0% 50%, #e8e8e8 50% 100%); }
+  @keyframes spin-slow { to { transform: rotate(360deg); } }
+  .empty-title { font-size: 18px; color: rgba(255,255,255,0.5); margin-top: 8px; }
+  .empty-sub { font-size: 13px; opacity: 0.5; }
+
+  /* Detail card */
+  .detail-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 28px; overflow: hidden;
+    animation: fadeUp 0.35s ease; max-width: 680px;
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Hero */
+  .detail-hero {
+    background: linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(255,255,255,0.03) 100%);
+    padding: 32px 28px; display: flex; gap: 24px; align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .hero-img-wrap {
+    flex-shrink: 0; width: 140px; height: 140px;
+    background: rgba(255,255,255,0.05); border-radius: 50%;
+    border: 2px solid rgba(255,215,0,0.2);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .hero-img {
+    width: 130px; height: 130px; object-fit: contain;
+    filter: drop-shadow(0 8px 24px rgba(255,215,0,0.35));
+    transition: opacity 0.4s;
+  }
+  .hero-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 56px; opacity: 0.15; }
+
+  .hero-names { flex: 1; }
+
+  /* Japanese name BIG */
+  .hero-jp {
+    font-size: clamp(42px, 7vw, 68px); font-weight: 900;
+    color: var(--gold); line-height: 1;
+    text-shadow: 0 0 32px rgba(255,215,0,0.35);
+    letter-spacing: 2px; margin-bottom: 6px;
+  }
+  .hero-hira { font-size: 18px; color: rgba(255,255,255,0.5); margin-bottom: 6px; letter-spacing: 1px; }
+  .hero-number { font-family: 'Fredoka One', cursive; font-size: 13px; color: rgba(255,215,0,0.4); }
+
+  /* Detail body */
+  .detail-body { padding: 24px 28px; }
+
+  /* English name — the "answer" */
+  .english-section {
+    background: rgba(255,255,255,0.04);
+    border-radius: 18px; padding: 20px 24px; margin-bottom: 22px;
+  }
+
+  .english-label { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+  .english-name {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(32px, 6vw, 52px);
+    color: white; line-height: 1; margin-bottom: 16px;
+    text-transform: capitalize;
+    text-shadow: 0 0 20px rgba(255,255,255,0.15);
+  }
+
+  /* Speech buttons */
+  .speech-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .speech-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 20px; border-radius: 50px; border: none;
+    cursor: pointer; font-size: 15px; font-weight: 700;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    transition: all 0.2s; user-select: none;
+  }
+  .speech-btn:active { transform: scale(0.95); }
+
+  .btn-jp {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #1a1a2e;
+    box-shadow: 0 4px 16px rgba(255,215,0,0.3);
+  }
+
+  .btn-en {
+    background: rgba(255,255,255,0.1);
+    color: white; border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .btn-jp.speaking, .btn-en.speaking {
+    animation: pulse 0.6s ease infinite alternate;
+  }
+
+  @keyframes pulse {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0.7; transform: scale(0.97); }
+  }
+
+  /* Meaning / tips section */
+  .tips-section { margin-bottom: 22px; }
+
+  .tips-label { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+
+  .tip-card {
+    background: rgba(255,255,255,0.04); border-radius: 14px;
+    padding: 14px 18px; margin-bottom: 10px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+
+  .tip-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .tip-text { font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.75); }
+  .tip-text strong { color: var(--gold); }
+
+  /* Phrase section */
+  .phrase-section { margin-bottom: 8px; }
+  .phrase-label { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+
+  .phrase-card {
+    background: rgba(255,215,0,0.06); border: 1px solid rgba(255,215,0,0.15);
+    border-radius: 16px; padding: 16px 20px; margin-bottom: 10px;
+  }
+
+  .phrase-jp { font-size: 20px; font-weight: 900; color: white; margin-bottom: 4px; }
+  .phrase-en { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+
+  .phrase-speak-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 50px; border: none;
+    background: rgba(255,215,0,0.15); color: var(--gold);
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    transition: all 0.2s;
+  }
+  .phrase-speak-btn:active { transform: scale(0.95); }
+
+  /* No speech warning */
+  .no-speech {
+    background: rgba(227,53,13,0.15); border: 1px solid rgba(227,53,13,0.3);
+    border-radius: 12px; padding: 12px 16px;
+    font-size: 13px; color: rgba(255,150,130,0.9);
+    margin-bottom: 16px; display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- LEFT -->
+  <div class="left-panel">
+    <div class="app-header">
+      <div class="header-label">じいじ・ばあば むけ</div>
+      <div class="app-title">Pokémon えいご 🎌</div>
+      <div class="app-desc">日本語名から英語名を調べよう</div>
+      <div class="search-wrap">
+        <input class="search-input" id="searchInput" type="text"
+               placeholder="日本語で検索... ピカチュウ" autocomplete="off">
+        <div class="suggestions" id="suggestions"></div>
+      </div>
+    </div>
+    <div class="section-label">よく使われるポケモン</div>
+    <div class="popular-list" id="popularList"></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-panel" id="rightPanel">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-pokeball"></div>
+      <div class="empty-title">ポケモンをえらんでね</div>
+      <div class="empty-sub">左のリストか検索から選んでください</div>
+    </div>
+    <div class="detail-card" id="detailCard" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+// ========== DATA ==========
+const POKEMON = [
+  { en:"pikachu",    jp:"ピカチュウ",  hira:"ぴかちゅう",  id:25,  tip:"「ピカ」は光るという意味。「チュウ」はネズミの鳴き声！", phrase:[{jp:"これはピカチュウです",en:"This is Pikachu"},{jp:"ピカチュウはかわいいですね",en:"Pikachu is cute, isn't it"}] },
+  { en:"bulbasaur",  jp:"フシギダネ",  hira:"ふしぎだね",  id:1,   tip:"「フシギ」は不思議、「タネ」は種という意味。背中に種を背負っています。", phrase:[{jp:"フシギダネはくさタイプです",en:"Bulbasaur is a Grass type"},{jp:"かわいいですね",en:"It's cute, isn't it"}] },
+  { en:"charmander", jp:"ヒトカゲ",    hira:"ひとかげ",    id:4,   tip:"「ヒ」は火、「トカゲ」はとかげ。しっぽに炎が燃えています！", phrase:[{jp:"ヒトカゲはひのこをつかいます",en:"Charmander uses Ember"},{jp:"つよいですね",en:"It's strong, isn't it"}] },
+  { en:"squirtle",   jp:"ゼニガメ",    hira:"ぜにがめ",    id:7,   tip:"「ゼニ」はお金の昔の言い方、「ガメ」はかめ。甲羅が特徴です。", phrase:[{jp:"ゼニガメはみずタイプです",en:"Squirtle is a Water type"},{jp:"かっこいいですね",en:"It's cool, isn't it"}] },
+  { en:"charizard",  jp:"リザードン",  hira:"りざーどん",  id:6,   tip:"英語の「lizard（とかげ）」と「dragon（ドラゴン）」を合わせた名前です。", phrase:[{jp:"リザードンはとてもつよいです",en:"Charizard is very strong"},{jp:"おおきいですね",en:"It's big, isn't it"}] },
+  { en:"blastoise",  jp:"カメックス",  hira:"かめっくす",  id:9,   tip:"「カメ」はかめ、英語の「excess（超える）」から。大砲が背中にあります！", phrase:[{jp:"カメックスはみずをだします",en:"Blastoise shoots water"},{jp:"すごいですね",en:"Amazing, isn't it"}] },
+  { en:"venusaur",   jp:"フシギバナ",  hira:"ふしぎばな",  id:3,   tip:"「フシギ」は不思議、「バナ」は花。背中に大きな花が咲いています。", phrase:[{jp:"フシギバナははなをさかせます",en:"Venusaur blooms flowers"},{jp:"きれいですね",en:"It's beautiful, isn't it"}] },
+  { en:"jigglypuff", jp:"プリン",      hira:"ぷりん",      id:39,  tip:"「プリン」はプリン（デザート）のこと。まるくてふわふわしています！", phrase:[{jp:"プリンはうたがすきです",en:"Jigglypuff loves singing"},{jp:"かわいいですね",en:"It's cute, isn't it"}] },
+  { en:"meowth",     jp:"ニャース",    hira:"にゃーす",    id:52,  tip:"「ニャー」はねこの鳴き声。ロケット団のニャースはしゃべります！", phrase:[{jp:"ニャースはおかねがすきです",en:"Meowth loves money"},{jp:"おもしろいですね",en:"It's interesting, isn't it"}] },
+  { en:"gengar",     jp:"ゲンガー",    hira:"げんがー",    id:94,  tip:"英語の「doppelganger（影）」から来ています。ゴーストタイプです。", phrase:[{jp:"ゲンガーはゴーストタイプです",en:"Gengar is a Ghost type"},{jp:"こわいですね",en:"It's scary, isn't it"}] },
+  { en:"eevee",      jp:"イーブイ",    hira:"いーぶい",    id:133, tip:"英語の「eve（前夜）」から。いろんなポケモンに進化できます！", phrase:[{jp:"イーブイはしんかします",en:"Eevee evolves"},{jp:"かわいいですね",en:"It's cute, isn't it"}] },
+  { en:"snorlax",    jp:"カビゴン",    hira:"かびごん",    id:143, tip:"「カビ」はかびのこと。いつも食べて寝ているポケモンです。", phrase:[{jp:"カビゴンはねてばかりいます",en:"Snorlax is always sleeping"},{jp:"おおきいですね",en:"It's big, isn't it"}] },
+  { en:"mewtwo",     jp:"ミュウツー",  hira:"みゅうつー",  id:150, tip:"「ミュウ」のクローンとして作られた伝説のポケモンです。とても強い！", phrase:[{jp:"ミュウツーはでんせつのポケモンです",en:"Mewtwo is a Legendary Pokémon"},{jp:"つよいですね",en:"It's powerful, isn't it"}] },
+  { en:"mew",        jp:"ミュウ",      hira:"みゅう",      id:151, tip:"すべてのポケモンの先祖とも言われる幻のポケモンです。", phrase:[{jp:"ミュウはまぼろしのポケモンです",en:"Mew is a Mythical Pokémon"},{jp:"めずらしいですね",en:"It's rare, isn't it"}] },
+  { en:"togepi",     jp:"トゲピー",    hira:"とげぴー",    id:175, tip:"たまごのからをかぶったかわいいポケモン。しあわせをはこびます。", phrase:[{jp:"トゲピーはたまごからうまれました",en:"Togepi was born from an egg"},{jp:"かわいいですね",en:"It's cute, isn't it"}] },
+  { en:"espeon",     jp:"エーフィ",    hira:"えーふぃ",    id:196, tip:"イーブイがひるに仲良くしてもらうと進化します。エスパータイプです。", phrase:[{jp:"エーフィはエスパータイプです",en:"Espeon is a Psychic type"},{jp:"きれいですね",en:"It's beautiful, isn't it"}] },
+  { en:"umbreon",    jp:"ブラッキー",  hira:"ぶらっきー",  id:197, tip:"イーブイが夜に仲良くしてもらうと進化します。あくタイプです。", phrase:[{jp:"ブラッキーはよるにひかります",en:"Umbreon glows at night"},{jp:"かっこいいですね",en:"It's cool, isn't it"}] },
+  { en:"lugia",      jp:"ルギア",      hira:"るぎあ",      id:249, tip:"うみのばんにんとよばれる伝説のポケモン。映画にも登場しました！", phrase:[{jp:"ルギアはうみのばんにんです",en:"Lugia is the guardian of the sea"},{jp:"すごいですね",en:"Amazing, isn't it"}] },
+  { en:"lucario",    jp:"ルカリオ",    hira:"るかりお",    id:448, tip:"波導（はどう）というエネルギーを感じることができます。映画の主人公にも！", phrase:[{jp:"ルカリオははどうをつかいます",en:"Lucario uses Aura"},{jp:"かっこいいですね",en:"It's cool, isn't it"}] },
+  { en:"greninja",   jp:"ゲッコウガ",  hira:"げっこうが",  id:658, tip:"「月光」と「蛙」を合わせた名前。水手裏剣がつよいです！", phrase:[{jp:"ゲッコウガはにんじゃのようです",en:"Greninja is like a ninja"},{jp:"はやいですね",en:"It's fast, isn't it"}] },
+  { en:"sylveon",    jp:"ニンフィア",  hira:"にんふぃあ",  id:700, tip:"イーブイがフェアリータイプのわざをおぼえると進化します。リボンがかわいい！", phrase:[{jp:"ニンフィアはフェアリータイプです",en:"Sylveon is a Fairy type"},{jp:"かわいいですね",en:"It's cute, isn't it"}] },
+  { en:"garchomp",   jp:"ガブリアス",  hira:"がぶりあす",  id:445, tip:"「ガブ」はかみつく、「リアス」はリアス海岸から。とても速く飛べます！", phrase:[{jp:"ガブリアスはとてもはやいです",en:"Garchomp is very fast"},{jp:"つよいですね",en:"It's strong, isn't it"}] },
+  { en:"dragonite",  jp:"カイリュー",  hira:"かいりゅー",  id:149, tip:"「海龍（かいりゅう）」という意味。海を泳いで世界を一周できます！", phrase:[{jp:"カイリューはうみをおよぎます",en:"Dragonite swims the ocean"},{jp:"すごいですね",en:"Amazing, isn't it"}] },
+  { en:"slowpoke",   jp:"ヤドン",      hira:"やどん",      id:79,  tip:"「宿（やど）」から。のんびりしていて、いつもぼーっとしています。", phrase:[{jp:"ヤドンはのんびりしています",en:"Slowpoke is easygoing"},{jp:"かわいいですね",en:"It's cute, isn't it"}] },
+  { en:"absol",      jp:"アブソル",    hira:"あぶそる",    id:359, tip:"英語の「absolute（絶対）」から。さいがいをよちするポケモンです。", phrase:[{jp:"アブソルはさいがいをよちします",en:"Absol predicts disasters"},{jp:"かっこいいですね",en:"It's cool, isn't it"}] },
+];
+
+const POPULAR_NAMES = ["pikachu","charizard","eevee","gengar","mewtwo","snorlax","lucario","jigglypuff","greninja","sylveon","bulbasaur","squirtle"];
+
+// ========== SPEECH ==========
+const synth = window.speechSynthesis;
+let jpVoice = null;
+let enVoice = null;
+let speechReady = false;
+
+function loadVoices() {
+  const voices = synth.getVoices();
+  jpVoice = voices.find(v => v.lang.startsWith('ja')) || null;
+  enVoice = voices.find(v => v.lang.startsWith('en-US')) || voices.find(v => v.lang.startsWith('en')) || null;
+  if (voices.length > 0) speechReady = true;
+}
+
+loadVoices();
+if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+
+function speak(text, lang) {
+  if (!synth) return;
+  synth.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  if (lang === 'ja' && jpVoice) utt.voice = jpVoice;
+  if (lang === 'en' && enVoice) utt.voice = enVoice;
+  utt.lang = lang === 'ja' ? 'ja-JP' : 'en-US';
+  utt.rate = 0.85;
+  utt.pitch = 1;
+  synth.speak(utt);
+}
+
+// ========== UTILS ==========
+function imgUrl(id) {
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+}
+
+// ========== BUILD LIST ==========
+function buildPopularList() {
+  const list = document.getElementById('popularList');
+  POPULAR_NAMES.forEach(name => {
+    const p = POKEMON.find(x => x.en === name);
+    if (!p) return;
+    const el = document.createElement('div');
+    el.className = 'popular-item';
+    el.id = 'pop_' + p.en;
+    el.innerHTML = `
+      <div class="pop-img-wrap">
+        <div class="pop-img-placeholder">◕</div>
+        <img class="pop-img" src="${imgUrl(p.id)}" alt="${p.en}"
+          style="opacity:0" onload="this.style.opacity=1" onerror="this.style.display='none'">
+      </div>
+      <div class="pop-names">
+        <div class="pop-jp">${p.jp}</div>
+        <div class="pop-hira">${p.hira}</div>
+        <div class="pop-en">${p.en}</div>
+      </div>
+      <div class="pop-arrow">›</div>
+    `;
+    el.onclick = () => selectPokemon(p);
+    list.appendChild(el);
+  });
+}
+
+// ========== SEARCH ==========
+function setupSearch() {
+  const input = document.getElementById('searchInput');
+  const sugg = document.getElementById('suggestions');
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    if (!q) { sugg.style.display = 'none'; return; }
+    const matches = POKEMON.filter(p =>
+      p.jp.includes(q) || p.hira.includes(q) || p.en.toLowerCase().includes(q.toLowerCase())
+    ).slice(0, 7);
+    if (!matches.length) { sugg.style.display = 'none'; return; }
+    sugg.innerHTML = matches.map(p => `
+      <div class="sugg-item" onclick="pickSugg('${p.en}')">
+        <div>
+          <div class="sugg-jp-big">${p.jp}</div>
+          <div class="sugg-en">${p.en}</div>
+        </div>
+        <div style="color:var(--muted);font-size:13px">${p.hira}</div>
+      </div>
+    `).join('');
+    sugg.style.display = 'block';
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.search-wrap')) sugg.style.display = 'none';
+  });
+}
+
+function pickSugg(name) {
+  const p = POKEMON.find(x => x.en === name);
+  document.getElementById('searchInput').value = p.jp;
+  document.getElementById('suggestions').style.display = 'none';
+  selectPokemon(p);
+}
+
+// ========== SELECT ==========
+function selectPokemon(p) {
+  document.querySelectorAll('.popular-item').forEach(el => el.classList.remove('active'));
+  const popEl = document.getElementById('pop_' + p.en);
+  if (popEl) { popEl.classList.add('active'); popEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+
+  document.getElementById('emptyState').style.display = 'none';
+  const card = document.getElementById('detailCard');
+  card.style.display = 'block';
+
+  const phrases = (p.phrase || []).map(ph => `
+    <div class="phrase-card">
+      <div class="phrase-jp">${ph.jp}</div>
+      <div class="phrase-en">${ph.en}</div>
+      <button class="phrase-speak-btn" onclick="speak('${ph.jp}','ja')">
+        🔊 日本語で聞く
+      </button>
+    </div>
+  `).join('');
+
+  card.innerHTML = `
+    <div class="detail-hero">
+      <div class="hero-img-wrap">
+        <div class="hero-placeholder">◕</div>
+        <img class="hero-img" src="${imgUrl(p.id)}" alt="${p.en}"
+          style="opacity:0" onload="this.style.opacity=1" onerror="this.style.display='none'">
+      </div>
+      <div class="hero-names">
+        <div class="hero-jp">${p.jp}</div>
+        <div class="hero-hira">${p.hira}</div>
+        <div class="hero-number">No. ${String(p.id).padStart(3,'0')}</div>
+      </div>
+    </div>
+
+    <div class="detail-body">
+
+      <!-- English name + speech -->
+      <div class="english-section">
+        <div class="english-label">🇺🇸 英語でいうと...</div>
+        <div class="english-name">${p.en}</div>
+        <div class="speech-row">
+          <button class="speech-btn btn-jp" onclick="speakBtn(this,'${p.jp}','ja')">
+            🔊 日本語で聞く
+          </button>
+          <button class="speech-btn btn-en" onclick="speakBtn(this,'${p.en}','en')">
+            🔊 English
+          </button>
+        </div>
+      </div>
+
+      <!-- Tip -->
+      ${p.tip ? `
+      <div class="tips-section">
+        <div class="tips-label">💡 なまえのひみつ</div>
+        <div class="tip-card">
+          <div class="tip-icon">📖</div>
+          <div class="tip-text">${p.tip}</div>
+        </div>
+      </div>` : ''}
+
+      <!-- Phrases -->
+      ${phrases ? `
+      <div class="phrase-section">
+        <div class="phrase-label">💬 孫と話すときのフレーズ</div>
+        ${phrases}
+      </div>` : ''}
+
+    </div>
+  `;
+
+  document.getElementById('rightPanel').scrollTop = 0;
+}
+
+function speakBtn(btn, text, lang) {
+  document.querySelectorAll('.speech-btn').forEach(b => b.classList.remove('speaking'));
+  btn.classList.add('speaking');
+  speak(text, lang);
+  setTimeout(() => btn.classList.remove('speaking'), 2500);
+}
+
+// ========== SERVICE WORKER ==========
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// ========== INIT ==========
+buildPopularList();
+setupSearch();
+</script>
+</body>
+</html>
