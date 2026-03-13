@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ポケにほん">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>ポケモン にほんご</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #FFD700;
+    --red: #E3350D;
+    --dark: #1a1a2e;
+    --mid: #16213e;
+    --card: rgba(255,255,255,0.07);
+    --border: rgba(255,215,0,0.2);
+    --text: rgba(255,255,255,0.9);
+    --muted: rgba(255,255,255,0.4);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    overscroll-behavior: none;
+  }
+
+  body {
+    background: linear-gradient(160deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%);
+    background-attachment: fixed;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    color: var(--text);
+    overflow-x: hidden;
+    min-height: 100dvh;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  /* ===== LAYOUT: two-column on iPad ===== */
+  .app-shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    min-height: 100dvh;
+  }
+
+  @media (min-width: 768px) {
+    .app-shell {
+      grid-template-columns: 380px 1fr;
+      grid-template-rows: 100dvh;
+    }
+    .left-panel {
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      background: rgba(0,0,0,0.15);
+      backdrop-filter: blur(20px);
+    }
+    .right-panel {
+      overflow-y: auto;
+      padding: 40px;
+    }
+  }
+
+  /* ===== LEFT PANEL ===== */
+  .left-panel { padding: 0 0 20px; }
+
+  .app-header {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    position: sticky;
+    top: 0;
+    background: rgba(26,26,46,0.92);
+    backdrop-filter: blur(20px);
+    z-index: 10;
+  }
+
+  .header-label {
+    font-size: 10px;
+    letter-spacing: 5px;
+    color: var(--gold);
+    opacity: 0.8;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .app-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 26px;
+    color: white;
+    text-shadow: 0 0 24px rgba(255,215,0,0.4);
+    line-height: 1;
+    margin-bottom: 14px;
+  }
+
+  /* Search */
+  .search-wrap { position: relative; }
+
+  .search-input {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 16px;
+    border: 2px solid var(--border);
+    background: rgba(255,255,255,0.07);
+    color: white;
+    font-size: 17px;
+    font-family: 'Fredoka One', cursive;
+    outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+
+  .search-input:focus {
+    border-color: rgba(255,215,0,0.5);
+    box-shadow: 0 0 0 3px rgba(255,215,0,0.1);
+  }
+  .search-input::placeholder { color: rgba(255,255,255,0.25); font-family: 'Zen Kaku Gothic New', sans-serif; }
+
+  .suggestions {
+    position: absolute;
+    left: 0; right: 0; top: calc(100% + 6px);
+    background: #1b2545;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    z-index: 100;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+    display: none;
+  }
+
+  .sugg-item {
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+    font-size: 15px;
+  }
+  .sugg-item:hover { background: rgba(255,215,0,0.1); }
+  .sugg-item:last-child { border-bottom: none; }
+  .sugg-jp { color: var(--gold); font-weight: 900; font-size: 18px; }
+
+  /* Popular list */
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 20px 24px 10px;
+  }
+
+  .popular-list { padding: 0 16px; }
+
+  .popular-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 4px;
+  }
+
+  .popular-item:hover, .popular-item.active {
+    background: rgba(255,215,0,0.1);
+  }
+
+  .popular-item.active {
+    border: 1px solid rgba(255,215,0,0.3);
+  }
+
+  .pop-img-wrap {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .pop-img {
+    width: 46px; height: 46px;
+    object-fit: contain;
+    transition: opacity 0.3s;
+  }
+
+  .pop-img-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    opacity: 0.4;
+  }
+
+  .pop-names { flex: 1; min-width: 0; }
+  .pop-en { font-size: 12px; color: var(--muted); text-transform: capitalize; }
+  .pop-jp { font-size: 20px; font-weight: 900; color: white; line-height: 1.1; }
+  .pop-hira { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+
+  .pop-arrow { color: var(--muted); font-size: 14px; flex-shrink: 0; }
+
+  /* ===== RIGHT PANEL / DETAIL ===== */
+  .right-panel {
+    padding: 24px 20px 40px;
+  }
+
+  @media (max-width: 767px) {
+    .right-panel { padding: 20px 16px 40px; }
+  }
+
+  /* Empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60dvh;
+    text-align: center;
+    color: var(--muted);
+    gap: 12px;
+  }
+
+  .empty-pokeball {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: conic-gradient(#E3350D 0% 50%, white 50% 100%);
+    position: relative;
+    box-shadow: 0 0 40px rgba(227,53,13,0.2);
+    animation: spin-slow 8s linear infinite;
+  }
+
+  .empty-pokeball::after {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    border-radius: 50%;
+    background: conic-gradient(#cc2d0b 0% 50%, #e8e8e8 50% 100%);
+  }
+
+  @keyframes spin-slow { to { transform: rotate(360deg); } }
+
+  .empty-title { font-size: 18px; color: rgba(255,255,255,0.5); margin-top: 8px; }
+  .empty-sub { font-size: 13px; opacity: 0.5; }
+
+  /* Detail card */
+  .detail-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    overflow: hidden;
+    animation: fadeUp 0.35s ease;
+    max-width: 680px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Hero */
+  .detail-hero {
+    background: linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(255,255,255,0.03) 100%);
+    padding: 32px 28px;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .hero-img-wrap {
+    flex-shrink: 0;
+    width: 140px; height: 140px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+    border: 2px solid rgba(255,215,0,0.2);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-img {
+    width: 130px; height: 130px;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 24px rgba(255,215,0,0.35));
+    transition: opacity 0.4s;
+  }
+
+  .hero-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 56px;
+    opacity: 0.15;
+  }
+
+  .hero-names { flex: 1; }
+  .hero-en {
+    font-family: 'Fredoka One', cursive;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .hero-katakana {
+    font-size: clamp(42px, 7vw, 68px);
+    font-weight: 900;
+    color: var(--gold);
+    line-height: 1;
+    text-shadow: 0 0 32px rgba(255,215,0,0.35);
+    letter-spacing: 2px;
+  }
+  .hero-hira {
+    font-size: 20px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+  .hero-number {
+    font-family: 'Fredoka One', cursive;
+    font-size: 13px;
+    color: rgba(255,215,0,0.4);
+    margin-top: 8px;
+  }
+
+  /* Romaji section */
+  .detail-body { padding: 24px 28px; }
+
+  .romaji-card {
+    background: rgba(255,255,255,0.04);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .romaji-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .romaji-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+    width: 72px;
+  }
+
+  .romaji-value {
+    font-family: 'Fredoka One', cursive;
+    font-size: 24px;
+    color: white;
+    letter-spacing: 1px;
+  }
+
+  .syllables {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .syllable {
+    background: rgba(255,215,0,0.12);
+    border: 1px solid rgba(255,215,0,0.25);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 15px;
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  /* Char writing section */
+  .writing-section { margin-bottom: 22px; }
+
+  .writing-title {
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .chars-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .char-tile {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 12px 10px;
+    text-align: center;
+    min-width: 68px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+    max-width: 90px;
+    user-select: none;
+  }
+
+  .char-tile:active, .char-tile.active {
+    background: rgba(255,215,0,0.12);
+    border-color: rgba(255,215,0,0.45);
+    transform: scale(0.97);
+  }
+
+  .char-tile .char { font-size: 34px; font-weight: 900; line-height: 1; }
+  .char-tile .char-rom { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* Stroke detail */
+  .stroke-panel {
+    background: rgba(255,255,255,0.04);
+    border-radius: 18px;
+    padding: 18px 20px;
+    margin-top: 12px;
+    animation: fadeUp 0.25s ease;
+  }
+
+  .stroke-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  .stroke-big-char {
+    font-size: 72px;
+    font-weight: 900;
+    color: var(--gold);
+    line-height: 1;
+    text-shadow: 0 0 24px rgba(255,215,0,0.4);
+  }
+
+  .stroke-meta { flex: 1; }
+  .stroke-romaji { font-family: 'Fredoka One', cursive; font-size: 24px; color: white; }
+  .stroke-type { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .stroke-count { font-size: 12px; color: var(--gold); opacity: 0.7; margin-top: 2px; }
+
+  .steps-grid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .step-box {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+    flex: 1;
+    min-width: 72px;
+  }
+
+  .step-n { font-size: 10px; color: var(--gold); font-weight: 700; margin-bottom: 4px; }
+  .step-c { font-size: 30px; font-weight: 900; }
+  .step-d { font-size: 10px; color: var(--muted); margin-top: 3px; line-height: 1.3; }
+
+  /* Drawing canvas */
+  .draw-section { margin-top: 22px; }
+
+  .draw-title {
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .canvas-outer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .canvas-frame {
+    border-radius: 20px;
+    overflow: hidden;
+    border: 2px solid rgba(255,215,0,0.2);
+    background: rgba(255,255,255,0.97);
+    cursor: crosshair;
+    touch-action: none;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    width: 100%;
+    max-width: 400px;
+  }
+
+  canvas { display: block; width: 100%; }
+
+  .canvas-btns {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    padding: 11px 22px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn:active { transform: scale(0.96); }
+
+  .btn-clear {
+    background: rgba(255,255,255,0.08);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  /* Offline banner */
+  .offline-banner {
+    display: none;
+    position: fixed;
+    bottom: calc(16px + var(--safe-bottom));
+    left: 50%; transform: translateX(-50%);
+    background: rgba(227,53,13,0.9);
+    color: white;
+    padding: 10px 22px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 700;
+    backdrop-filter: blur(10px);
+    z-index: 999;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="offline-banner" id="offlineBanner">📵 オフライン中 — 画像は表示されません</div>
+
+<div class="app-shell">
+  <!-- LEFT: Search + List -->
+  <div class="left-panel">
+    <div class="app-header">
+      <div class="header-label">ポケモン にほんご</div>
+      <div class="app-title">Pokémon Japanese ⚡</div>
+      <div class="search-wrap">
+        <input class="search-input" id="searchInput" type="text"
+               placeholder="英語で検索... pikachu" autocomplete="off" spellcheck="false">
+        <div class="suggestions" id="suggestions"></div>
+      </div>
+    </div>
+    <div class="section-label">よく使われるポケモン</div>
+    <div class="popular-list" id="popularList"></div>
+  </div>
+
+  <!-- RIGHT: Detail -->
+  <div class="right-panel" id="rightPanel">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-pokeball"></div>
+      <div class="empty-title">ポケモンをえらんでね</div>
+      <div class="empty-sub">左のリストか検索から選んでください</div>
+    </div>
+    <div class="detail-card" id="detailCard" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+// ========== DATA ==========
+const POKEMON = [
+  { en:"pikachu",    jp:"ピカチュウ",  hira:"ぴかちゅう",  romaji:"Pi-ka-chu",       syl:["Pi","ka","chu"],          id:25  },
+  { en:"bulbasaur",  jp:"フシギダネ",  hira:"ふしぎだね",  romaji:"Fu-shi-gi-da-ne", syl:["Fu","shi","gi","da","ne"],id:1   },
+  { en:"charmander", jp:"ヒトカゲ",    hira:"ひとかげ",    romaji:"Hi-to-ka-ge",     syl:["Hi","to","ka","ge"],      id:4   },
+  { en:"squirtle",   jp:"ゼニガメ",    hira:"ぜにがめ",    romaji:"Ze-ni-ga-me",     syl:["Ze","ni","ga","me"],      id:7   },
+  { en:"charizard",  jp:"リザードン",  hira:"りざーどん",  romaji:"Ri-za-do-n",      syl:["Ri","za","do","n"],       id:6   },
+  { en:"blastoise",  jp:"カメックス",  hira:"かめっくす",  romaji:"Ka-me-kku-su",    syl:["Ka","me","kku","su"],     id:9   },
+  { en:"venusaur",   jp:"フシギバナ",  hira:"ふしぎばな",  romaji:"Fu-shi-gi-ba-na", syl:["Fu","shi","gi","ba","na"],id:3   },
+  { en:"jigglypuff", jp:"プリン",      hira:"ぷりん",      romaji:"Pu-ri-n",         syl:["Pu","ri","n"],            id:39  },
+  { en:"meowth",     jp:"ニャース",    hira:"にゃーす",    romaji:"Nya-su",          syl:["Nya","su"],               id:52  },
+  { en:"psyduck",    jp:"コダック",    hira:"こだっく",    romaji:"Ko-da-kku",       syl:["Ko","da","kku"],          id:54  },
+  { en:"gengar",     jp:"ゲンガー",    hira:"げんがー",    romaji:"Ge-n-ga",         syl:["Ge","n","ga"],            id:94  },
+  { en:"eevee",      jp:"イーブイ",    hira:"いーぶい",    romaji:"I-bu-i",          syl:["I","bu","i"],             id:133 },
+  { en:"snorlax",    jp:"カビゴン",    hira:"かびごん",    romaji:"Ka-bi-go-n",      syl:["Ka","bi","go","n"],       id:143 },
+  { en:"mewtwo",     jp:"ミュウツー",  hira:"みゅうつー",  romaji:"Myu-tsu",         syl:["Myu","tsu"],              id:150 },
+  { en:"mew",        jp:"ミュウ",      hira:"みゅう",      romaji:"Myu",             syl:["Myu"],                    id:151 },
+  { en:"togepi",     jp:"トゲピー",    hira:"とげぴー",    romaji:"To-ge-pi",        syl:["To","ge","pi"],           id:175 },
+  { en:"espeon",     jp:"エーフィ",    hira:"えーふぃ",    romaji:"E-fi",            syl:["E","fi"],                 id:196 },
+  { en:"umbreon",    jp:"ブラッキー",  hira:"ぶらっきー",  romaji:"Bu-ra-kki",       syl:["Bu","ra","kki"],          id:197 },
+  { en:"lugia",      jp:"ルギア",      hira:"るぎあ",      romaji:"Ru-gi-a",         syl:["Ru","gi","a"],            id:249 },
+  { en:"ho-oh",      jp:"ホウオウ",    hira:"ほうおう",    romaji:"Ho-u-o-u",        syl:["Ho","u","o","u"],         id:250 },
+  { en:"treecko",    jp:"キモリ",      hira:"きもり",      romaji:"Ki-mo-ri",        syl:["Ki","mo","ri"],           id:252 },
+  { en:"torchic",    jp:"アチャモ",    hira:"あちゃも",    romaji:"A-cha-mo",        syl:["A","cha","mo"],           id:255 },
+  { en:"mudkip",     jp:"ミズゴロウ",  hira:"みずごろう",  romaji:"Mi-zu-go-ro-u",   syl:["Mi","zu","go","ro","u"],  id:258 },
+  { en:"gardevoir",  jp:"サーナイト",  hira:"さーないと",  romaji:"Sa-na-i-to",      syl:["Sa","na","i","to"],       id:282 },
+  { en:"flygon",     jp:"フライゴン",  hira:"ふらいごん",  romaji:"Fu-ra-i-go-n",    syl:["Fu","ra","i","go","n"],   id:330 },
+  { en:"absol",      jp:"アブソル",    hira:"あぶそる",    romaji:"A-bu-so-ru",      syl:["A","bu","so","ru"],       id:359 },
+  { en:"lucario",    jp:"ルカリオ",    hira:"るかりお",    romaji:"Ru-ka-ri-o",      syl:["Ru","ka","ri","o"],       id:448 },
+  { en:"riolu",      jp:"リオル",      hira:"りおる",      romaji:"Ri-o-ru",         syl:["Ri","o","ru"],            id:447 },
+  { en:"garchomp",   jp:"ガブリアス",  hira:"がぶりあす",  romaji:"Ga-bu-ri-a-su",   syl:["Ga","bu","ri","a","su"],  id:445 },
+  { en:"sylveon",    jp:"ニンフィア",  hira:"にんふぃあ",  romaji:"Ni-n-fi-a",       syl:["Ni","n","fi","a"],        id:700 },
+  { en:"greninja",   jp:"ゲッコウガ",  hira:"げっこうが",  romaji:"Ge-kkou-ga",      syl:["Ge","kkou","ga"],         id:658 },
+  { en:"dragonite",  jp:"カイリュー",  hira:"かいりゅー",  romaji:"Ka-i-ryu",        syl:["Ka","i","ryu"],           id:149 },
+  { en:"slowpoke",   jp:"ヤドン",      hira:"やどん",      romaji:"Ya-do-n",         syl:["Ya","do","n"],            id:79  },
+  { en:"vulpix",     jp:"ロコン",      hira:"ろこん",      romaji:"Ro-ko-n",         syl:["Ro","ko","n"],            id:37  },
+  { en:"raichu",     jp:"ライチュウ",  hira:"らいちゅう",  romaji:"Ra-i-chu",        syl:["Ra","i","chu"],           id:26  },
+  { en:"clefairy",   jp:"ピッピ",      hira:"ぴっぴ",      romaji:"Pi-ppi",          syl:["Pi","ppi"],               id:35  },
+  { en:"ninetales",  jp:"キュウコン",  hira:"きゅうこん",  romaji:"Kyu-ko-n",        syl:["Kyu","ko","n"],           id:38  },
+  { en:"togekiss",   jp:"トゲキッス",  hira:"とげきっす",  romaji:"To-ge-ki-ssu",    syl:["To","ge","ki","ssu"],     id:468 },
+  { en:"glaceon",    jp:"グレイシア",  hira:"ぐれいしあ",  romaji:"Gu-re-i-shi-a",   syl:["Gu","re","i","shi","a"],  id:471 },
+  { en:"typhlosion", jp:"バクフーン",  hira:"ばくふーん",  romaji:"Ba-ku-fu-n",      syl:["Ba","ku","fu","n"],       id:157 },
+  { en:"scizor",     jp:"ハッサム",    hira:"はっさむ",    romaji:"Ha-ssa-mu",       syl:["Ha","ssa","mu"],          id:212 },
+  { en:"heracross",  jp:"ヘラクロス",  hira:"へらくろす",  romaji:"He-ra-ku-ro-su",  syl:["He","ra","ku","ro","su"], id:214 },
+  { en:"chikorita",  jp:"チコリータ",  hira:"ちこりーた",  romaji:"Chi-ko-ri-ta",    syl:["Chi","ko","ri","ta"],     id:152 },
+  { en:"cyndaquil",  jp:"ヒノアラシ",  hira:"ひのあらし",  romaji:"Hi-no-a-ra-shi",  syl:["Hi","no","a","ra","shi"], id:155 },
+  { en:"totodile",   jp:"ワニノコ",    hira:"わにのこ",    romaji:"Wa-ni-no-ko",     syl:["Wa","ni","no","ko"],      id:158 },
+  { en:"ampharos",   jp:"デンリュウ",  hira:"でんりゅう",  romaji:"De-n-ryu",        syl:["De","n","ryu"],           id:181 },
+  { en:"ralts",      jp:"ラルトス",    hira:"らるとす",    romaji:"Ra-ru-to-su",     syl:["Ra","ru","to","su"],      id:280 },
+  { en:"giratina",   jp:"ギラティナ",  hira:"ぎらてぃな",  romaji:"Gi-ra-ti-na",     syl:["Gi","ra","ti","na"],      id:487 },
+  { en:"haunter",    jp:"ゴースト",    hira:"ごーすと",    romaji:"Go-su-to",        syl:["Go","su","to"],           id:93  },
+  { en:"dragonair",  jp:"ハクリュー",  hira:"はくりゅー",  romaji:"Ha-ku-ryu",       syl:["Ha","ku","ryu"],          id:148 },
+];
+
+const STROKES = {
+  "ア":{r:"a",   t:"カタカナ", s:["右上から斜め下へ","横線から縦に折れる"]},
+  "イ":{r:"i",   t:"カタカナ", s:["左から右下へ払い","縦に下ろす"]},
+  "ウ":{r:"u",   t:"カタカナ", s:["横線（上）","縦線","横線（下）"]},
+  "エ":{r:"e",   t:"カタカナ", s:["横線（上）","縦線","横線（下）"]},
+  "オ":{r:"o",   t:"カタカナ", s:["横線","縦線","左下へ払い"]},
+  "カ":{r:"ka",  t:"カタカナ", s:["横線","縦から下へ払い","右から斜め"]},
+  "キ":{r:"ki",  t:"カタカナ", s:["横線","横線","縦線","右下へ払い"]},
+  "ク":{r:"ku",  t:"カタカナ", s:["右上から斜め","左下へ払い"]},
+  "ケ":{r:"ke",  t:"カタカナ", s:["縦線","横線（中）","右下へ払い"]},
+  "コ":{r:"ko",  t:"カタカナ", s:["横線（上）","縦・横（下）"]},
+  "サ":{r:"sa",  t:"カタカナ", s:["横線","横線","縦から下へ払い"]},
+  "シ":{r:"shi", t:"カタカナ", s:["点（左上）","点（左中）","右下へ払い"]},
+  "ス":{r:"su",  t:"カタカナ", s:["横線・縦折れ","左下へ払い"]},
+  "セ":{r:"se",  t:"カタカナ", s:["横線（上）","縦から下払い","横線（底）"]},
+  "ソ":{r:"so",  t:"カタカナ", s:["点（上）","右下へ払い"]},
+  "タ":{r:"ta",  t:"カタカナ", s:["横線","右から斜め","縦から下払い"]},
+  "チ":{r:"chi", t:"カタカナ", s:["横線（上）","横線（中）","縦から下払い"]},
+  "ツ":{r:"tsu", t:"カタカナ", s:["点×3（左から）","右下へ払い"]},
+  "テ":{r:"te",  t:"カタカナ", s:["横線","縦線","右へ横払い"]},
+  "ト":{r:"to",  t:"カタカナ", s:["縦線","右下へ短く払い"]},
+  "ナ":{r:"na",  t:"カタカナ", s:["横線","縦から下払い"]},
+  "ニ":{r:"ni",  t:"カタカナ", s:["横線（短・上）","横線（長・下）"]},
+  "ヌ":{r:"nu",  t:"カタカナ", s:["横線","縦から下払い"]},
+  "ネ":{r:"ne",  t:"カタカナ", s:["点","横・縦線","左払い","右払い"]},
+  "ノ":{r:"no",  t:"カタカナ", s:["右上から左下へ払い"]},
+  "ハ":{r:"ha",  t:"カタカナ", s:["左払い","右払い"]},
+  "ヒ":{r:"hi",  t:"カタカナ", s:["縦線","横から右払い"]},
+  "フ":{r:"fu",  t:"カタカナ", s:["横線","左下へ払い"]},
+  "ヘ":{r:"he",  t:"カタカナ", s:["山型に一筆"]},
+  "ホ":{r:"ho",  t:"カタカナ", s:["横線","縦線","左払い","右払い"]},
+  "マ":{r:"ma",  t:"カタカナ", s:["横線","縦から右払い"]},
+  "ミ":{r:"mi",  t:"カタカナ", s:["横線×3（下が長く右払い）"]},
+  "ム":{r:"mu",  t:"カタカナ", s:["角・折れ","縦から下払い"]},
+  "メ":{r:"me",  t:"カタカナ", s:["横から右払い","左上から右下へ交差"]},
+  "モ":{r:"mo",  t:"カタカナ", s:["横線×2","縦・横線"]},
+  "ヤ":{r:"ya",  t:"カタカナ", s:["左払い","縦から右払い","横線"]},
+  "ユ":{r:"yu",  t:"カタカナ", s:["横・縦折れ（左）","縦から下払い（右）"]},
+  "ヨ":{r:"yo",  t:"カタカナ", s:["縦線","横線×3"]},
+  "ラ":{r:"ra",  t:"カタカナ", s:["横線","縦から左払い"]},
+  "リ":{r:"ri",  t:"カタカナ", s:["縦払い（左）","縦払い（右）"]},
+  "ル":{r:"ru",  t:"カタカナ", s:["縦・折り返し","右下払い"]},
+  "レ":{r:"re",  t:"カタカナ", s:["縦から右払い"]},
+  "ロ":{r:"ro",  t:"カタカナ", s:["縦線（左）","横・縦・横（右）"]},
+  "ワ":{r:"wa",  t:"カタカナ", s:["縦・横払い（左）","縦払い（右）"]},
+  "ン":{r:"n",   t:"カタカナ", s:["点・右払い"]},
+  "ガ":{r:"ga",  t:"カタカナ", s:["カ ＋ 濁点″"]},
+  "ギ":{r:"gi",  t:"カタカナ", s:["キ ＋ 濁点″"]},
+  "グ":{r:"gu",  t:"カタカナ", s:["ク ＋ 濁点″"]},
+  "ゲ":{r:"ge",  t:"カタカナ", s:["ケ ＋ 濁点″"]},
+  "ゴ":{r:"go",  t:"カタカナ", s:["コ ＋ 濁点″"]},
+  "ザ":{r:"za",  t:"カタカナ", s:["サ ＋ 濁点″"]},
+  "ジ":{r:"ji",  t:"カタカナ", s:["シ ＋ 濁点″"]},
+  "ズ":{r:"zu",  t:"カタカナ", s:["ス ＋ 濁点″"]},
+  "ゼ":{r:"ze",  t:"カタカナ", s:["セ ＋ 濁点″"]},
+  "ゾ":{r:"zo",  t:"カタカナ", s:["ソ ＋ 濁点″"]},
+  "ダ":{r:"da",  t:"カタカナ", s:["タ ＋ 濁点″"]},
+  "デ":{r:"de",  t:"カタカナ", s:["テ ＋ 濁点″"]},
+  "ド":{r:"do",  t:"カタカナ", s:["ト ＋ 濁点″"]},
+  "バ":{r:"ba",  t:"カタカナ", s:["ハ ＋ 濁点″"]},
+  "ビ":{r:"bi",  t:"カタカナ", s:["ヒ ＋ 濁点″"]},
+  "ブ":{r:"bu",  t:"カタカナ", s:["フ ＋ 濁点″"]},
+  "ベ":{r:"be",  t:"カタカナ", s:["ヘ ＋ 濁点″"]},
+  "ボ":{r:"bo",  t:"カタカナ", s:["ホ ＋ 濁点″"]},
+  "パ":{r:"pa",  t:"カタカナ", s:["ハ ＋ 半濁点○"]},
+  "ピ":{r:"pi",  t:"カタカナ", s:["ヒ ＋ 半濁点○"]},
+  "プ":{r:"pu",  t:"カタカナ", s:["フ ＋ 半濁点○"]},
+  "ペ":{r:"pe",  t:"カタカナ", s:["ヘ ＋ 半濁点○"]},
+  "ポ":{r:"po",  t:"カタカナ", s:["ホ ＋ 半濁点○"]},
+  "ャ":{r:"(ya)", t:"小文字",  s:["ヤ の小さい版"]},
+  "ュ":{r:"(yu)", t:"小文字",  s:["ユ の小さい版"]},
+  "ョ":{r:"(yo)", t:"小文字",  s:["ヨ の小さい版"]},
+  "ッ":{r:"(tt)", t:"小文字",  s:["ツ の小さい版（促音）"]},
+  "ー":{r:"—",   t:"長音符",  s:["横に引く（音を伸ばす）"]},
+};
+
+const POPULAR_NAMES = ["pikachu","charizard","eevee","gengar","mewtwo","snorlax","lucario","jigglypuff","greninja","sylveon","bulbasaur","squirtle"];
+
+// ========== STATE ==========
+let currentPokemon = null;
+let selectedChar = null;
+let drawing = false;
+let canvas, ctx;
+
+// ========== INIT ==========
+function imgUrl(id) {
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+}
+
+function buildPopularList() {
+  const list = document.getElementById('popularList');
+  POPULAR_NAMES.forEach(name => {
+    const p = POKEMON.find(x => x.en === name);
+    if (!p) return;
+    const el = document.createElement('div');
+    el.className = 'popular-item';
+    el.id = 'pop_' + p.en;
+    el.innerHTML = `
+      <div class="pop-img-wrap">
+        <div class="pop-img-placeholder">◕</div>
+        <img class="pop-img" src="${imgUrl(p.id)}" alt="${p.en}"
+          style="opacity:0" onload="this.style.opacity=1"
+          onerror="this.style.display='none'">
+      </div>
+      <div class="pop-names">
+        <div class="pop-en">${p.en}</div>
+        <div class="pop-jp">${p.jp}</div>
+        <div class="pop-hira">${p.hira}</div>
+      </div>
+      <div class="pop-arrow">›</div>
+    `;
+    el.onclick = () => selectPokemon(p);
+    list.appendChild(el);
+  });
+}
+
+function setupSearch() {
+  const input = document.getElementById('searchInput');
+  const sugg = document.getElementById('suggestions');
+
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase().trim();
+    if (!q) { sugg.style.display = 'none'; return; }
+    const matches = POKEMON.filter(p => p.en.startsWith(q)).slice(0, 7);
+    if (!matches.length) { sugg.style.display = 'none'; return; }
+    sugg.innerHTML = matches.map(p => `
+      <div class="sugg-item" onclick="pickSugg('${p.en}')">
+        <span style="text-transform:capitalize;font-size:15px">${p.en}</span>
+        <span class="sugg-jp">${p.jp}</span>
+      </div>
+    `).join('');
+    sugg.style.display = 'block';
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const q = input.value.toLowerCase().trim();
+      const p = POKEMON.find(x => x.en === q);
+      if (p) { selectPokemon(p); sugg.style.display = 'none'; }
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.search-wrap')) sugg.style.display = 'none';
+  });
+}
+
+function pickSugg(name) {
+  const p = POKEMON.find(x => x.en === name);
+  document.getElementById('searchInput').value = name;
+  document.getElementById('suggestions').style.display = 'none';
+  selectPokemon(p);
+}
+
+// ========== SELECT POKEMON ==========
+function selectPokemon(p) {
+  currentPokemon = p;
+  selectedChar = null;
+
+  // Update active state in list
+  document.querySelectorAll('.popular-item').forEach(el => el.classList.remove('active'));
+  const popEl = document.getElementById('pop_' + p.en);
+  if (popEl) { popEl.classList.add('active'); popEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+
+  // Hide empty, show card
+  document.getElementById('emptyState').style.display = 'none';
+  const card = document.getElementById('detailCard');
+  card.style.display = 'block';
+
+  const chars = [...p.jp];
+
+  card.innerHTML = `
+    <!-- HERO -->
+    <div class="detail-hero">
+      <div class="hero-img-wrap">
+        <div class="hero-placeholder">⬤</div>
+        <img class="hero-img" src="${imgUrl(p.id)}" alt="${p.en}"
+          style="opacity:0" onload="this.style.opacity=1"
+          onerror="this.style.display='none'">
+      </div>
+      <div class="hero-names">
+        <div class="hero-en">${p.en}</div>
+        <div class="hero-katakana">${p.jp}</div>
+        <div class="hero-hira">${p.hira}</div>
+        <div class="hero-number">No. ${String(p.id).padStart(3,'0')}</div>
+      </div>
+    </div>
+
+    <div class="detail-body">
+      <!-- ROMAJI -->
+      <div class="romaji-card">
+        <div class="romaji-row">
+          <span class="romaji-label">よみかた</span>
+          <span class="romaji-value">${p.romaji}</span>
+        </div>
+        <div style="padding-left:84px">
+          <div class="syllables">
+            ${p.syl.map(s => `<span class="syllable">${s}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- WRITING GUIDE -->
+      <div class="writing-section">
+        <div class="writing-title">✍️ 書き方ガイド — 文字をタップ</div>
+        <div class="chars-row" id="charsRow">
+          ${chars.map((c,i) => {
+            const info = STROKES[c];
+            return `<div class="char-tile" id="ct_${i}" onclick="selectChar('${c}',${i})">
+              <div class="char" style="color:${info?'#FFD700':'rgba(255,255,255,0.3)'}">${c}</div>
+              <div class="char-rom">${info?info.r:'—'}</div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div id="strokePanel"></div>
+      </div>
+
+      <!-- DRAWING -->
+      <div class="draw-section">
+        <div class="draw-title">🖊️ 書いてみよう — Practice writing</div>
+        <div class="canvas-outer">
+          <div class="canvas-frame">
+            <canvas id="drawCanvas" height="220"></canvas>
+          </div>
+          <div class="canvas-btns">
+            <button class="btn btn-clear" onclick="clearCanvas()">🗑️ 消す Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Scroll right panel to top on mobile
+  const rp = document.getElementById('rightPanel');
+  rp.scrollTop = 0;
+
+  initCanvas();
+}
+
+// ========== CHAR SELECT ==========
+function selectChar(c, idx) {
+  if (selectedChar === c) {
+    selectedChar = null;
+    document.querySelectorAll('.char-tile').forEach(el => el.classList.remove('active'));
+    document.getElementById('strokePanel').innerHTML = '';
+    return;
+  }
+  selectedChar = c;
+  document.querySelectorAll('.char-tile').forEach((el,i) => el.classList.toggle('active', i===idx));
+
+  const info = STROKES[c];
+  if (!info) {
+    document.getElementById('strokePanel').innerHTML =
+      `<div class="stroke-panel" style="margin-top:12px"><p style="color:var(--muted);font-size:14px">「${c}」のデータは準備中です。</p></div>`;
+    return;
+  }
+
+  const steps = info.s.map((desc, i) => `
+    <div class="step-box">
+      <div class="step-n">第${i+1}画</div>
+      <div class="step-c">${c}</div>
+      <div class="step-d">${desc}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('strokePanel').innerHTML = `
+    <div class="stroke-panel">
+      <div class="stroke-top">
+        <div class="stroke-big-char">${c}</div>
+        <div class="stroke-meta">
+          <div class="stroke-romaji">${info.r}</div>
+          <div class="stroke-type">${info.t}</div>
+          <div class="stroke-count">${info.s.length}画</div>
+        </div>
+      </div>
+      <div class="writing-title">筆順（ひつじゅん）</div>
+      <div class="steps-grid">${steps}</div>
+    </div>
+  `;
+}
+
+// ========== CANVAS ==========
+function initCanvas() {
+  canvas = document.getElementById('drawCanvas');
+  if (!canvas) return;
+  ctx = canvas.getContext('2d');
+
+  // Set canvas resolution to match display
+  const w = canvas.offsetWidth || 340;
+  canvas.width = w * window.devicePixelRatio;
+  canvas.height = 220 * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  drawGrid();
+
+  const getPos = e => {
+    const r = canvas.getBoundingClientRect();
+    const sx = (canvas.offsetWidth || 340) / r.width;
+    const sy = 220 / r.height;
+    return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+  };
+
+  canvas.addEventListener('mousedown', e => { drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+  canvas.addEventListener('mousemove', e => {
+    if (!drawing) return;
+    const p = getPos(e);
+    ctx.strokeStyle = '#E3350D'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineTo(p.x, p.y); ctx.stroke();
+  });
+  canvas.addEventListener('mouseup', () => drawing = false);
+  canvas.addEventListener('mouseleave', () => drawing = false);
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    drawing = true;
+    const p = getPos(e.touches[0]);
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  }, { passive: false });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!drawing) return;
+    const p = getPos(e.touches[0]);
+    ctx.strokeStyle = '#E3350D'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineTo(p.x, p.y); ctx.stroke();
+  }, { passive: false });
+  canvas.addEventListener('touchend', () => drawing = false);
+}
+
+function drawGrid() {
+  if (!ctx || !canvas) return;
+  const w = canvas.offsetWidth || 340, h = 220;
+  ctx.clearRect(0, 0, w, h);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(180,180,180,0.35)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 5]);
+  ctx.beginPath();
+  ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h);
+  ctx.moveTo(0, h/2); ctx.lineTo(w, h/2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function clearCanvas() {
+  if (!ctx || !canvas) return;
+  drawGrid();
+}
+
+// ========== OFFLINE ==========
+function checkOnline() {
+  const banner = document.getElementById('offlineBanner');
+  if (!navigator.onLine) {
+    banner.style.display = 'block';
+    setTimeout(() => banner.style.display = 'none', 4000);
+  }
+}
+window.addEventListener('offline', checkOnline);
+
+// ========== SERVICE WORKER ==========
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// ========== START ==========
+buildPopularList();
+setupSearch();
+</script>
+</body>
+</html>
