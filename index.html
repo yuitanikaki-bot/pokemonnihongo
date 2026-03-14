@@ -147,6 +147,112 @@
   .sugg-item:last-child { border-bottom: none; }
   .sugg-jp { color: var(--gold); font-weight: 900; font-size: 18px; }
 
+  /* Tabs */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    padding: 12px 16px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 4px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 9px 0;
+    border: none;
+    border-radius: 10px 10px 0 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+  }
+
+  .tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+    background: rgba(255,215,0,0.06);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* あいうえお index bar */
+  .kana-index {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    position: sticky;
+    top: 0;
+    background: rgba(26,26,46,0.95);
+    backdrop-filter: blur(16px);
+    z-index: 5;
+  }
+
+  .kana-btn {
+    padding: 5px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+  }
+
+  .kana-btn:hover, .kana-btn.active {
+    background: rgba(255,215,0,0.15);
+    border-color: rgba(255,215,0,0.4);
+    color: var(--gold);
+  }
+
+  /* Group header */
+  .kana-group-header {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.7;
+    padding: 14px 20px 6px;
+  }
+
+  /* List item in あいうえお view */
+  .list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .list-item:hover, .list-item.active {
+    background: rgba(255,215,0,0.08);
+  }
+  .list-item.active { border-left: 3px solid var(--gold); }
+
+  .list-img-wrap {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden; position: relative;
+  }
+  .list-img { width: 40px; height: 40px; object-fit: contain; transition: opacity 0.3s; }
+  .list-img-ph { position: absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:18px; opacity:0.25; }
+
+  .list-names { flex: 1; min-width: 0; }
+  .list-jp { font-size: 18px; font-weight: 900; color: white; line-height: 1.1; }
+  .list-en { font-size: 11px; color: var(--muted); text-transform: capitalize; margin-top: 1px; }
+
   /* Popular list */
   .section-label {
     font-size: 10px;
@@ -562,8 +668,23 @@
         <div class="suggestions" id="suggestions"></div>
       </div>
     </div>
-    <div class="section-label">よく使われるポケモン</div>
-    <div class="popular-list" id="popularList"></div>
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabBtnPopular" onclick="switchTab('popular')">⭐ よく使う</button>
+      <button class="tab-btn" id="tabBtnList" onclick="switchTab('list')">📋 一覧</button>
+    </div>
+
+    <!-- Tab: Popular -->
+    <div class="tab-panel active" id="tabPopular">
+      <div class="section-label">よく使われるポケモン</div>
+      <div class="popular-list" id="popularList"></div>
+    </div>
+
+    <!-- Tab: あいうえお一覧 -->
+    <div class="tab-panel" id="tabList">
+      <div class="kana-index" id="kanaIndex"></div>
+      <div id="pokemonList"></div>
+    </div>
   </div>
 
   <!-- RIGHT: Detail -->
@@ -792,8 +913,10 @@ function selectPokemon(p) {
   selectedChar = null;
 
   // Update active state in list
-  document.querySelectorAll('.popular-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.popular-item, .list-item').forEach(el => el.classList.remove('active'));
   const popEl = document.getElementById('pop_' + p.en);
+  const listEl2 = document.getElementById('li_' + p.en);
+  if (listEl2) listEl2.classList.add('active');
   if (popEl) { popEl.classList.add('active'); popEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
 
   // Hide empty, show card
@@ -995,6 +1118,93 @@ window.addEventListener('offline', checkOnline);
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+
+// ========== TABS ==========
+function switchTab(tab) {
+  document.getElementById('tabPopular').classList.toggle('active', tab === 'popular');
+  document.getElementById('tabList').classList.toggle('active', tab === 'list');
+  document.getElementById('tabBtnPopular').classList.toggle('active', tab === 'popular');
+  document.getElementById('tabBtnList').classList.toggle('active', tab === 'list');
+  if (tab === 'list' && !document.getElementById('pokemonList').hasChildNodes()) {
+    buildKanaList();
+  }
+}
+
+// ========== KANA ORDER ==========
+// Map katakana to 行 (row)
+const KANA_ROWS = [
+  { label: 'ア行', chars: ['ア','イ','ウ','エ','オ'] },
+  { label: 'カ行', chars: ['カ','キ','ク','ケ','コ','ガ','ギ','グ','ゲ','ゴ'] },
+  { label: 'サ行', chars: ['サ','シ','ス','セ','ソ','ザ','ジ','ズ','ゼ','ゾ'] },
+  { label: 'タ行', chars: ['タ','チ','ツ','テ','ト','ダ','ヂ','ヅ','デ','ド'] },
+  { label: 'ナ行', chars: ['ナ','ニ','ヌ','ネ','ノ'] },
+  { label: 'ハ行', chars: ['ハ','ヒ','フ','ヘ','ホ','バ','ビ','ブ','ベ','ボ','パ','ピ','プ','ペ','ポ'] },
+  { label: 'マ行', chars: ['マ','ミ','ム','メ','モ'] },
+  { label: 'ヤ行', chars: ['ヤ','ユ','ヨ'] },
+  { label: 'ラ行', chars: ['ラ','リ','ル','レ','ロ'] },
+  { label: 'ワ行', chars: ['ワ','ヲ','ン'] },
+];
+
+function getKanaRow(jp) {
+  const first = jp[0];
+  for (let i = 0; i < KANA_ROWS.length; i++) {
+    if (KANA_ROWS[i].chars.includes(first)) return i;
+  }
+  return KANA_ROWS.length; // unknown at end
+}
+
+function buildKanaList() {
+  // Sort by kana row, then by jp name
+  const sorted = [...POKEMON].sort((a, b) => {
+    const ra = getKanaRow(a.jp), rb = getKanaRow(b.jp);
+    if (ra !== rb) return ra - rb;
+    return a.jp.localeCompare(b.jp, 'ja');
+  });
+
+  // Group by row
+  const groups = {};
+  sorted.forEach(p => {
+    const rowIdx = getKanaRow(p.jp);
+    const label = rowIdx < KANA_ROWS.length ? KANA_ROWS[rowIdx].label : 'その他';
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(p);
+  });
+
+  // Build index bar
+  const indexBar = document.getElementById('kanaIndex');
+  indexBar.innerHTML = Object.keys(groups).map(label => 
+    `<button class="kana-btn" onclick="scrollToGroup('${label}')">${label.replace('行','')}</button>`
+  ).join('');
+
+  // Build list
+  const listEl = document.getElementById('pokemonList');
+  listEl.innerHTML = Object.entries(groups).map(([label, pokemons]) => `
+    <div class="kana-group-header" id="group_${label}">${label}</div>
+    ${pokemons.map(p => `
+      <div class="list-item" id="li_${p.en}" onclick="selectPokemon((${JSON.stringify(p)}))">
+        <div class="list-img-wrap">
+          <div class="list-img-ph">◕</div>
+          <img class="list-img" src="${imgUrl(p.id)}" alt="${p.en}"
+            style="opacity:0" onload="this.style.opacity=1" onerror="this.style.display='none'">
+        </div>
+        <div class="list-names">
+          <div class="list-jp">${p.jp}</div>
+          <div class="list-en">${p.en}</div>
+        </div>
+      </div>
+    `).join('')}
+  `).join('');
+}
+
+function scrollToGroup(label) {
+  const el = document.getElementById('group_' + label);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Highlight active index btn
+  document.querySelectorAll('.kana-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === label.replace('行',''));
   });
 }
 
